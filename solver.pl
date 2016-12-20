@@ -40,11 +40,14 @@ checkClues([ClueH|ClueT], [MatrixH|MatrixT]):-
 		X > RowLen.	% exiting condition, we reached our last row
 		
 	checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-Y):-
+		X =< RowLen,
 		Y > ColLen, % condition to move to the next row
 		NewX is X + 1, % row increment
 		checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen, NewX-1). % step
 		
 	checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-Y):-
+		X =< RowLen, 
+		Y =< ColLen,
 		checkCloudPoint(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-Y),
 		NewY is Y + 1, % column increment
 		checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-NewY). % step
@@ -81,7 +84,7 @@ checkClues([ClueH|ClueT], [MatrixH|MatrixT]):-
 	
 	%---------- 3.4. Is Cloud ----------
 	
-	isCloud(IsCloud):-
+	isCloud(OutMatrix, OutMatrixTransposed, IsCloud):-
 		write('Checking if it is a cloud'), nl,
 		IsCloud is 1.
 	
@@ -96,10 +99,12 @@ checkClues([ClueH|ClueT], [MatrixH|MatrixT]):-
 		
 	checkCloudPoint(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-Y, 1):-
 		write('A corner'), nl,
-		isCloud(IsCloud),
+		isCloud(OutMatrix, OutMatrixTransposed, IsCloud),
 		IsCloud #= 1.
 		
 %---------- 3. Cloud Checking ----------
+
+%---------- 4. Solver Loop ----------
 
 %solver(+CluesRow, +CluesColumn, -OutMatrix)
 solver(CluesRow, CluesColumn, OutMatrix):-
@@ -116,7 +121,8 @@ solver(CluesRow, CluesColumn, OutMatrix):-
 	checkClues(CluesColumn, OutMatrixTransposed),	% checks if the numbers on the clues match the numbers on the matrix for columns
 	
 	% Check Clouds
-	checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen),			% checks if cloud rules are respected
-	
+	checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen),	% checks if cloud rules are respected
 	append(OutMatrix, Vars),
 	labeling([], Vars).
+	
+%---------- 4. Solver Loop ----------
