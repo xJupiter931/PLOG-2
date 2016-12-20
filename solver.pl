@@ -1,5 +1,6 @@
 :-use_module(library(lists)).
 :-use_module(library(clpfd)).
+:-use_module(list.pl).
 
 %---------- 1. Initiate the matrix ----------
 
@@ -44,11 +45,14 @@ checkClues([ClueH|ClueT], [MatrixH|MatrixT]):-
 		checkClouds(OutMatrix, RowLen, ColLen, NewX-1). % step
 		
 	checkClouds(OutMatrix, RowLen, ColLen, X-Y):-
-		write(X-Y), nl,
+		checkCloudPoint(OutMatrix, RowLen, ColLen, X-Y),
 		NewY is Y + 1, % column increment
 		checkClouds(OutMatrix, RowLen, ColLen, X-NewY). % step
 		
 	%---------- 3.1. Iteration ----------
+	
+	checkCloudPoint(OutMatrix, RowLen, ColLen, X-Y):-
+		
 	
 
 %---------- 3. Cloud Checking ----------

@@ -13,7 +13,7 @@ setListElement([H|T], Index, Element, [H|BoardOutTail]):-
 
 % Getter (+, +, -)
 getListElement(List, Index, Element):-
-  nth0(Index, List, Element).
+  nth1(Index, List, Element).
 
 % Utility
 % getListSize(+, -) Devolve o tamanho da lista
@@ -40,5 +40,5 @@ set2DListElement([InHead|InTail], XPos, YPos, Element, [InHead|OutTail]):-
 
 % Getter (+, +, +, -)
 get2DListElement(List, XPos, YPos, Element):-
-  nth0(YPos, List, SubList),
+  nth1(YPos, List, SubList),
   getListElement(SubList, XPos, Element).
