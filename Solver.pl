@@ -1,7 +1,7 @@
 :-use_module(library(lists)).
 :-use_module(library(clpfd)).
 
-%---------- Initiate the matrix ----------
+%---------- 1. Initiate the matrix ----------
 
 %initLines(ColLen, OutMatrix)
 initLines(_, []).
@@ -15,9 +15,9 @@ initMatrix(RowLen, ColLen, OutMatrix):-
 	length(OutMatrix, RowLen),
 	initLines(ColLen, OutMatrix).
 	
-%---------- Initiate the matrix ----------
+%---------- 1. Initiate the matrix ----------
 
-%---------- Clue Checking ----------
+%---------- 2. Clue Checking ----------
 
 %checkClues(+Clues, +Matrix)
 checkClues([], []).
@@ -25,29 +25,33 @@ checkClues([ClueH|ClueT], [MatrixH|MatrixT]):-
 	sum(MatrixH, #=, ClueH),
 	checkClues(ClueT, MatrixT).
 	
-%---------- Clue Checking ----------
+%---------- 2. Clue Checking ----------
 
-%---------- Cloud Checking ----------
+%---------- 3. Cloud Checking ----------
 
-%checkClouds(+OutMatrix, +RowLen, +ColLen)
-checkClouds(OutMatrix, RowLen, ColLen):-
-	checkClouds(OutMatrix, RowLen, ColLen, 1-1).	% entry point
+	%---------- 3.1. Iteration ----------
 	
-checkClouds(_, RowLen, _, X-_):-
-	X > RowLen.	% exiting condition, we reached our last row
-	
-checkClouds(OutMatrix, RowLen, ColLen, X-Y):-
-	Y > ColLen, % condition to move to the next row
-	NewX is X + 1, % row increment
-	checkClouds(OutMatrix, RowLen, ColLen, NewX-1). % step
-	
-checkClouds(OutMatrix, RowLen, ColLen, X-Y):-
-	write(X-Y), nl,
-	NewY is Y + 1, % column increment
-	checkClouds(OutMatrix, RowLen, ColLen, X-NewY). % step
+	%checkClouds(+OutMatrix, +RowLen, +ColLen)
+	checkClouds(OutMatrix, RowLen, ColLen):-
+		checkClouds(OutMatrix, RowLen, ColLen, 1-1).	% entry point
+		
+	checkClouds(_, RowLen, _, X-_):-
+		X > RowLen.	% exiting condition, we reached our last row
+		
+	checkClouds(OutMatrix, RowLen, ColLen, X-Y):-
+		Y > ColLen, % condition to move to the next row
+		NewX is X + 1, % row increment
+		checkClouds(OutMatrix, RowLen, ColLen, NewX-1). % step
+		
+	checkClouds(OutMatrix, RowLen, ColLen, X-Y):-
+		write(X-Y), nl,
+		NewY is Y + 1, % column increment
+		checkClouds(OutMatrix, RowLen, ColLen, X-NewY). % step
+		
+	%---------- 3.1. Iteration ----------
 	
 
-%---------- Cloud Checking ----------
+%---------- 3. Cloud Checking ----------
 
 %solver(+CluesRow, +CluesColumn, -OutMatrix)
 solver(CluesRow, CluesColumn, OutMatrix):-
