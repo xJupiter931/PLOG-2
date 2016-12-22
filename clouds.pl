@@ -1,6 +1,8 @@
 :-use_module(library(lists)).
 :-use_module(library(clpfd)).
+:-use_module(library(random)).
 
+:-include(printer).
 :-use_module(list).
 
 %---------- 1. Initiate the matrix ----------
@@ -195,3 +197,48 @@ solver(CluesRow, CluesColumn, OutMatrix):-
 	fd_statistics.
 	
 %---------- 4. Solver Loop ----------
+
+%---------- 5. Generator Loop ----------
+
+%getCluesRows(-CluesRows, +OutMatrix)
+getCluesRows([], []).
+getCluesRows([CRH|CRT], [OMH|OMT]):-
+	sumlist(OMH, CRH),
+	getCluesRows(CRT, OMT).
+
+startGenerator(RowsCount, CluesColumn, OutMatrix):-
+	statistics(walltime, _),
+	generator(RowsCount, CluesColumn, OutMatrix),
+	statistics(walltime, [_|[ExecutionTime]]),
+    write('Execution took '), write(ExecutionTime), write(' ms.'), nl,
+	fd_statistics,
+	!,
+	getCluesRows(CluesRows, OutMatrix),
+	printer(CluesRows, CluesColumn, OutMatrix).
+	
+generator(RowsCount, CluesColumn, OutMatrix):-
+	% Get Dimensions
+	length(CluesRow, RowsCount),	% get the number of rows
+	length(CluesColumn, ColsCount),	% get the number of columns
+	
+	% Initialize the solution matrix
+	initMatrix(RowsCount, ColsCount, OutMatrix),	% initializes the matrix with the given Rows and Columns Count
+	
+	% Check Clues
+	checkClues(CluesRow, OutMatrix),				% checks if the numbers on the clues match the numbers on the matrix for rows
+	transpose(OutMatrix, OutMatrixTransposed),		% transposes so that the function checkClues can be reused for columns
+	checkClues(CluesColumn, OutMatrixTransposed),	% checks if the numbers on the clues match the numbers on the matrix for columns
+	
+	% Check Clouds
+	checkClouds(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount),	% checks if cloud rules are respected
+	
+	% Labeling
+	append(OutMatrix, Vars),	% pre labeling step, 2 dimension array to 1 dimension array
+	labeling([variable(sel)], Vars).		% labeling
+	
+generator(RowsCount, CluesColumn, OutMatrix):-
+	generator(RowsCount, CluesColumn, OutMatrix).
+	
+%---------- 5. Generator Loop ----------
+
+sel(Vars, Selected, Rest) :- random_select(Selected, Vars, Rest), var(Selected).
