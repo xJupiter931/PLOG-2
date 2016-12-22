@@ -176,8 +176,22 @@ solver(CluesRow, CluesColumn, OutMatrix):-
 	% Check Clouds
 	checkClouds(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount), !,	% checks if cloud rules are respected
 	
+	/*
+	statistics(walltime, Result)
+	sets Result as a list, with the head being the total time since the Prolog instance was started,
+	and the tail being a single-element list representing the time since the last statistics(walltime, _) call was made.
+	https://coderwall.com/p/laduzw/how-to-measure-execution-time-in-swi-prolog
+	*/
+	
+	statistics(walltime, _),
+	
 	% Labeling
 	append(OutMatrix, Vars),	% pre labeling step, 2 dimension array to 1 dimension array
-	labeling([down], Vars).		% labeling
+	labeling([down], Vars),		% labeling
+	
+	statistics(walltime, [_|[ExecutionTime]]),
+    write('Execution took '), write(ExecutionTime), write(' ms.'), nl,
+	
+	fd_statistics.
 	
 %---------- 4. Solver Loop ----------
