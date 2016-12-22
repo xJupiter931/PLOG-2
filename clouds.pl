@@ -162,7 +162,7 @@ checkClue(Clue, Matrix):-
 
 %---------- 4. Solver Loop ----------
 
-solver(CluesRow, CluesColumn, OutMatrix):-
+solver(CluesRow, CluesColumn, _OutMatrix):-
 	% Get Dimensions
 	length(CluesRow, RowsCount),	% get the number of rows
 	length(CluesColumn, ColsCount),	% get the number of columns
@@ -194,27 +194,27 @@ solver(CluesRow, CluesColumn, OutMatrix):-
 	statistics(walltime, [_|[ExecutionTime]]),
     write('Execution took '), write(ExecutionTime), write(' ms.'), nl,
 	
-	fd_statistics.
+	fd_statistics,
+	printer(CluesRow, CluesColumn, OutMatrix).
 	
 %---------- 4. Solver Loop ----------
 
 %---------- 5. Generator Loop ----------
 
-%getCluesRows(-CluesRows, +OutMatrix)
+%getCluesRows(-CluesRow, +OutMatrix)
 getCluesRows([], []).
 getCluesRows([CRH|CRT], [OMH|OMT]):-
 	sumlist(OMH, CRH),
 	getCluesRows(CRT, OMT).
 
-startGenerator(RowsCount, CluesColumn, OutMatrix):-
+startGenerator(RowsCount, CluesColumn, _OutMatrix):-
 	statistics(walltime, _),
 	generator(RowsCount, CluesColumn, OutMatrix),
 	statistics(walltime, [_|[ExecutionTime]]),
     write('Execution took '), write(ExecutionTime), write(' ms.'), nl,
 	fd_statistics,
-	!,
-	getCluesRows(CluesRows, OutMatrix),
-	printer(CluesRows, CluesColumn, OutMatrix).
+	getCluesRows(CluesRow, OutMatrix),
+	printer(CluesRow, CluesColumn, OutMatrix).
 	
 generator(RowsCount, CluesColumn, OutMatrix):-
 	% Get Dimensions
@@ -239,6 +239,32 @@ generator(RowsCount, CluesColumn, OutMatrix):-
 generator(RowsCount, CluesColumn, OutMatrix):-
 	generator(RowsCount, CluesColumn, OutMatrix).
 	
+sel(Vars, Selected, Rest) :- random_select(Selected, Vars, Rest), var(Selected).
 %---------- 5. Generator Loop ----------
 
-sel(Vars, Selected, Rest) :- random_select(Selected, Vars, Rest), var(Selected).
+%---------- 6. Tests ----------
+
+	%---------- 6.1. Solver ----------
+	
+	solverTest1:-
+		solver([3,3,0,2,2,0], [2,2,2,2,2], _).
+		
+	solverTest2:-
+		solver([3,3,0,2,2,0], [2,2,0,2,2], _). % no solution
+		
+	solverTest3:-
+		solver([2,2,0,2,2],[2,2,0,2,2], _).
+	
+	%---------- 6.1. Solver ----------
+	
+	%---------- 6.2. Generator ----------
+	
+	generatorTest1:-
+		startGenerator(6, [2,2,2,2,2], _).
+		
+	generatorTest2:-
+		startGenerator(7, [2,2,2,0,5,5], _).
+
+	%---------- 6.2. Generator ----------
+
+%---------- 6. Tests ----------
