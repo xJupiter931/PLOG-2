@@ -1,20 +1,21 @@
 :-use_module(library(lists)).
 :-use_module(library(clpfd)).
+
 :-use_module(list).
 
 %---------- 1. Initiate the matrix ----------
 
-%initLines(ColLen, OutMatrix)
-initLines(_, []).
-initLines(ColLen, [Row|T]):-
-	length(Row, ColLen),
+%initRows(ColsCount, OutMatrix)
+initRows(_, []).
+initRows(ColsCount, [Row|T]):-
+	length(Row, ColsCount),
 	domain(Row, 0, 1),
-	initLines(ColLen, T).
+	initRows(ColsCount, T).
 
-%initMatrix(+RowLen, +ColLen, -OutMatrix)
-initMatrix(RowLen, ColLen, OutMatrix):-
-	length(OutMatrix, RowLen),
-	initLines(ColLen, OutMatrix).
+%initMatrix(+RowsCount, +ColsCount, -OutMatrix)
+initMatrix(RowsCount, ColsCount, OutMatrix):-
+	length(OutMatrix, RowsCount),
+	initRows(ColsCount, OutMatrix).
 	
 %---------- 1. Initiate the matrix ----------
 
@@ -23,8 +24,13 @@ initMatrix(RowLen, ColLen, OutMatrix):-
 %checkClues(+Clues, +Matrix)
 checkClues([], []).
 checkClues([ClueH|ClueT], [MatrixH|MatrixT]):-
-	sum(MatrixH, #=, ClueH),
+	checkClue(ClueH, MatrixH),
 	checkClues(ClueT, MatrixT).
+	
+checkClue(x, _):- !.
+checkClue(Clue, Matrix):-
+	Clue \= x, !,
+	sum(Matrix, #=, Clue).
 	
 %---------- 2. Clue Checking ----------
 
@@ -32,85 +38,135 @@ checkClues([ClueH|ClueT], [MatrixH|MatrixT]):-
 
 	%---------- 3.1. Iteration ----------
 	
-	%checkClouds(+OutMatrix, +OutMatrixTransposed, +RowLen, +ColLen)
-	checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen):-
-		checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen, 1-1).	% entry point
+	%checkClouds(+OutMatrix, +OutMatrixTransposed, +RowsCount, +ColsCount)
+	checkClouds(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount):-
+		checkClouds(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount, 1-1).	% entry point
 		
-	checkClouds(_, _, RowLen, _, X-_):-
-		X > RowLen.	% exiting condition, we reached our last row
+	checkClouds(_, _, RowsCount, _, _-Y):-
+		Y > RowsCount.	% exiting condition, we are past our last row
 		
-	checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-Y):-
-		Y > ColLen, % condition to move to the next row
-		NewX is X + 1, % row increment
-		checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen, NewX-1). % step
+	checkClouds(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount, X-Y):-
+		X > ColsCount, % condition to move to the next row
+		NewY is Y + 1, % row increment
+		checkClouds(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount, 1-NewY). % step
 		
-	checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-Y):-
-		checkCloudPoint(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-Y),
-		NewY is Y + 1, % column increment
-		checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-NewY). % step
+	checkClouds(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount, X-Y):-
+		checkCloudsPoint(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount, X-Y),
+		NewX is X + 1, % column increment
+		checkClouds(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount, NewX-Y). % step
+	
+	%checkCloudsPoint(+OutMatrix, +OutMatrixTransposed, +RowsCount, +ColsCount, +X-Y)	
+	checkCloudsPoint(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount, X-Y):-
+		isCorner(OutMatrix, RowsCount, ColsCount, X-Y, IsCorner),						% evaluates if it's a corner
+		isCloud(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount, X-Y, IsCloud),	% evaluate if it leads to a cloud
+		IsCorner #=> IsCloud.															% if it's a corner then it must lead to a cloud, otherwise it doesn't matter
 		
 	%---------- 3.1. Iteration ----------
 	
-	%---------- 3.2. Is Shaded ----------
+	%---------- 3.2. Is Corner ----------
 	
-	%isShaded(+OutMatrix, +RowLen, +ColLen, +X-Y, -Shaded)
+	%isCorner(+OutMatrix, +RowsCount, +ColsCount, +X-Y, -IsCorner)
+	isCorner(OutMatrix, RowsCount, ColsCount, X-Y, IsCorner):-
+		Back_X is X - 1,	% previous X value
+		Back_Y is Y - 1,	% previous Y value	
+		
+		isShaded(OutMatrix, RowsCount, ColsCount, X-Y, Shaded),				% current point shading
+		isShaded(OutMatrix, RowsCount, ColsCount, Back_X-Y, ShadedLeft),	% left point shading
+		isShaded(OutMatrix, RowsCount, ColsCount, X-Back_Y, ShadedUp),		% up point shading
+		
+		((Shaded #= 1) #/\ (ShadedLeft #= 0) #/\ (ShadedUp #= 0)) #<=> IsCorner.	% if a point is shaded and the points up and left aren't, he is the upper left corner of a cloud
 	
-	isShaded(_, RowLen, ColLen, X-Y, Shaded):-
-		(X > RowLen; X < 1; Y > ColLen; Y < 1),
+	%---------- 3.2. Is Corner ----------
+	
+	%---------- 3.3. Is Shaded ----------
+	
+	%isShaded(+OutMatrix, +RowsCount, +ColsCount, +X-Y, -Shaded)
+	isShaded(_, RowsCount, ColsCount, X-Y, Shaded):-
+		(Y > ColsCount; Y < 1; X > RowsCount; X < 1),	% if it's outside the matrix
 		!,
-		Shaded is 0.
+		Shaded is 0.	% then it's an empty space
 		
 	isShaded(OutMatrix, _, _, X-Y, Shaded):-
-		get2DListElement(OutMatrix, X, Y, Shaded).
+		get2DListElement(OutMatrix, Y, X, Shaded).	% gets the color from the matrix
 	
-	%---------- 3.2. Is Shaded ----------
+	%---------- 3.3. Is Shaded ----------
 	
-	%---------- 3.3. Is Corner ----------
+	%---------- 3.4. Row Length ----------
 	
-	isCorner(OutMatrix, RowLen, ColLen, X-Y, IsCorner):-
+	shadedRowLen(_,ColsCount, _, _-Y,0):-
+		Y > ColsCount.
+	shadedRowLen(OutMatrix, ColsCount, RowsCount, X-Y, Len):-
+		isShaded(OutMatrix, RowsCount, ColsCount, X-Y, Shaded),
+		
+		(Shaded #= 0) #=> (Len #= 0),
+		(Shaded #= 1) #=> (Len #= RemainingLen + 1),
+		
+		Next_Y is Y + 1,
+		shadedRowLen(OutMatrix, ColsCount, RowsCount, X-Next_Y, RemainingLen).
+	
+	unshadedRowLen(_,ColsCount, _, _-Y,1):-
+		Y > ColsCount.
+		
+	unshadedRowLen(OutMatrix,ColsCount, RowsCount, X-Y,Len):-
+		isShaded(OutMatrix, RowsCount, ColsCount, X-Y, Shaded),
+		
+		(Shaded #= 1) #=> (Len #= 0),
+		(Shaded #= 0) #=> (Len #= RemainingLen + 1),
+		
+		Next_Y is Y + 1,
+		unshadedRowLen(OutMatrix,ColsCount, RowsCount, X-Next_Y,RemainingLen).
+	
+	%---------- 3.4. Row Len ----------
+	
+	%---------- 3.5. Cloud interior ----------
+	
+	checkInterior(_,RowsCount,_,X-_,_,0):-
+		X > RowsCount.
+	checkInterior(OutMatrix,RowsCount,ColsCount,X-Y, Width, RectLen):-
+		shadedRowLen(OutMatrix, ColsCount, RowsCount, X-Y, Len), !,
+		
+		(Width #\= Len) #=> (RectLen #= 0),
+		(Width #= Len) #=> (RectLen #= RemainingRectLen + 1),	
+	
+		Next_X is X + 1,
+		checkInterior(OutMatrix, RowsCount, ColsCount, Next_X-Y, Width, RemainingRectLen).
+		
+	%---------- 3.5. Cloud interior ----------
+	
+	%---------- 3.6. Is Cloud ----------
+	
+	isCloud(OutMatrix,OutMatrixTransposed,RowsCount,ColsCount,X-Y,IsCloud):-
+		shadedRowLen(OutMatrix, ColsCount, RowsCount, X-Y, Width), !,
+		shadedRowLen(OutMatrixTransposed, RowsCount, ColsCount, Y-X, Height), !,
+	
 		Back_X is X - 1,
 		Back_Y is Y - 1,
 		
-		isShaded(OutMatrix, RowLen, ColLen, X-Y, Shaded),
-		isShaded(OutMatrix, RowLen, ColLen, Back_X-Y, ShadedLeft),
-		isShaded(OutMatrix, RowLen, ColLen, X-Back_Y, ShadedUp),
+		unshadedRowLen(OutMatrix,ColsCount,RowsCount,Back_X-Back_Y,BorderWidth), !,
+		unshadedRowLen(OutMatrixTransposed,RowsCount,ColsCount,Back_Y-Back_X,BorderHeight), !,
 		
-		((Shaded #= 1) #/\ (ShadedLeft #= 0) #/\ (ShadedUp #= 0)) #<=> IsCorner.
-	
-	%---------- 3.3. Is Corner ----------
-	
-	%---------- 3.4. Is Cloud ----------
-	
-	isCloud(OutMatrix, OutMatrixTransposed, IsCloud):-
-		write('Checking if it is a cloud'), nl,
-		IsCloud is 1.
-	
-	%---------- 3.4. Is Cloud ----------
-	
-	checkCloudPoint(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-Y):-
-		isCorner(OutMatrix, RowLen, ColLen, X-Y, IsCorner),
-		checkCloudPoint(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-Y, IsCorner).
+		checkInterior(OutMatrix,RowsCount,ColsCount,X-Y,Width,RectHeight),
+		checkInterior(OutMatrixTransposed,ColsCount,RowsCount,Y-X,Height,RectWidth),
 		
-	checkCloudPoint(_, _, _, _, _, 0):-
-		write('Not a corner'), nl.
+		((Width #>= 2) #/\ (Height #>= 2) #/\
+		(BorderWidth #>= Width + 2) #/\ (BorderHeight #>= Height + 2)
+		#/\ (Height #= RectHeight) #/\ (Width #= RectWidth))
+		#<=> IsCloud.
 		
-	checkCloudPoint(OutMatrix, OutMatrixTransposed, RowLen, ColLen, X-Y, 1):-
-		write('A corner'), nl,
-		isCloud(OutMatrix, OutMatrixTransposed, IsCloud),
-		IsCloud #= 1.
-		
+	
+	%---------- 3.6. Is Cloud ----------
+	
 %---------- 3. Cloud Checking ----------
 
 %---------- 4. Solver Loop ----------
 
-%solver(+CluesRow, +CluesColumn, -OutMatrix)
 solver(CluesRow, CluesColumn, OutMatrix):-
 	% Get Dimensions
-	length(CluesRow, RowLen),		% get the number of lines
-	length(CluesColumn, ColLen),	% get the number of columns
+	length(CluesRow, RowsCount),	% get the number of rows
+	length(CluesColumn, ColsCount),	% get the number of columns
 	
 	% Initialize the solution matrix
-	initMatrix(RowLen, ColLen, OutMatrix),
+	initMatrix(RowsCount, ColsCount, OutMatrix),	% initializes the matrix with the given Rows and Columns Count
 	
 	% Check Clues
 	checkClues(CluesRow, OutMatrix),				% checks if the numbers on the clues match the numbers on the matrix for rows
@@ -118,9 +174,10 @@ solver(CluesRow, CluesColumn, OutMatrix):-
 	checkClues(CluesColumn, OutMatrixTransposed),	% checks if the numbers on the clues match the numbers on the matrix for columns
 	
 	% Check Clouds
-	checkClouds(OutMatrix, OutMatrixTransposed, RowLen, ColLen), !,	% checks if cloud rules are respected
+	checkClouds(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount), !,	% checks if cloud rules are respected
 	
-	append(OutMatrix, Vars),
-	labeling([], Vars).
+	% Labeling
+	append(OutMatrix, Vars),	% pre labeling step, 2 dimension array to 1 dimension array
+	labeling([down], Vars).		% labeling
 	
 %---------- 4. Solver Loop ----------

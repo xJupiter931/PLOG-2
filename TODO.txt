@@ -1,0 +1,10 @@
+- Printer
+	- TODO
+
+- Generator
+	- TODO
+
+- Solver
+	- Improvement, merge RowLenFunctions
+	- Improvement, iterate RowLen on X instead of Y
+	- Needed, statistics
