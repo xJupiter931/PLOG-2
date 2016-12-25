@@ -95,8 +95,10 @@ checkClue(Clue, Matrix):-
 	
 	%---------- 3.4. Row Length ----------
 	
+	%shadedRowLen(+OutMatrix, +ColsCount, +RowsCount, +X-Y, -Len)
 	shadedRowLen(_,ColsCount, _, _-Y,0):-
 		Y > ColsCount.
+		
 	shadedRowLen(OutMatrix, ColsCount, RowsCount, X-Y, Len):-
 		isShaded(OutMatrix, RowsCount, ColsCount, X-Y, Shaded),
 		
@@ -106,6 +108,7 @@ checkClue(Clue, Matrix):-
 		Next_Y is Y + 1,
 		shadedRowLen(OutMatrix, ColsCount, RowsCount, X-Next_Y, RemainingLen).
 	
+	%unshadedRowLen(+OutMatrix, +ColsCount, +RowsCount, +X-Y, -Len)
 	unshadedRowLen(_,ColsCount, _, _-Y,1):-
 		Y > ColsCount.
 		
@@ -122,6 +125,7 @@ checkClue(Clue, Matrix):-
 	
 	%---------- 3.5. Cloud interior ----------
 	
+	%checkInterior(+OutMatrix, +RowsCount, +ColsCount, +X-Y, +Width, -RectLen)
 	checkInterior(_,RowsCount,_,X-_,_,0):-
 		X > RowsCount.
 	checkInterior(OutMatrix,RowsCount,ColsCount,X-Y, Width, RectLen):-
@@ -137,7 +141,8 @@ checkClue(Clue, Matrix):-
 	
 	%---------- 3.6. Is Cloud ----------
 	
-	isCloud(OutMatrix,OutMatrixTransposed,RowsCount,ColsCount,X-Y,IsCloud):-
+	%isCloud(+OutMatrix, +OutMatrixTransposed, +RowsCount,+ColsCount, +X-Y, -IsCloud)
+	isCloud(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount, X-Y, IsCloud):-
 		shadedRowLen(OutMatrix, ColsCount, RowsCount, X-Y, Width), !,
 		shadedRowLen(OutMatrixTransposed, RowsCount, ColsCount, Y-X, Height), !,
 	
@@ -162,6 +167,7 @@ checkClue(Clue, Matrix):-
 
 %---------- 4. Solver Loop ----------
 
+%solver(+CluesRow, +CluesColumn, -OutMatrix)
 solver(CluesRow, CluesColumn, _OutMatrix):-
 	% Get Dimensions
 	length(CluesRow, RowsCount),	% get the number of rows
@@ -178,18 +184,11 @@ solver(CluesRow, CluesColumn, _OutMatrix):-
 	% Check Clouds
 	checkClouds(OutMatrix, OutMatrixTransposed, RowsCount, ColsCount), !,	% checks if cloud rules are respected
 	
-	/*
-	statistics(walltime, Result)
-	sets Result as a list, with the head being the total time since the Prolog instance was started,
-	and the tail being a single-element list representing the time since the last statistics(walltime, _) call was made.
-	https://coderwall.com/p/laduzw/how-to-measure-execution-time-in-swi-prolog
-	*/
-	
 	statistics(walltime, _),
 	
 	% Labeling
 	append(OutMatrix, Vars),	% pre labeling step, 2 dimension array to 1 dimension array
-	labeling([down], Vars),		% labeling
+	labeling([], Vars),		% labeling
 	
 	statistics(walltime, [_|[ExecutionTime]]),
     write('Execution took '), write(ExecutionTime), write(' ms.'), nl,
@@ -207,6 +206,7 @@ getCluesRows([CRH|CRT], [OMH|OMT]):-
 	sumlist(OMH, CRH),
 	getCluesRows(CRT, OMT).
 
+%startGenerator(+RowsCount, +CluesColumn, -OutMatrix)
 startGenerator(RowsCount, CluesColumn, _OutMatrix):-
 	statistics(walltime, _),
 	generator(RowsCount, CluesColumn, OutMatrix),
@@ -216,6 +216,7 @@ startGenerator(RowsCount, CluesColumn, _OutMatrix):-
 	getCluesRows(CluesRow, OutMatrix),
 	printer(CluesRow, CluesColumn, OutMatrix).
 	
+%generator(+RowsCount, +CluesColumn, -OutMatrix)
 generator(RowsCount, CluesColumn, OutMatrix):-
 	% Get Dimensions
 	length(CluesRow, RowsCount),	% get the number of rows
